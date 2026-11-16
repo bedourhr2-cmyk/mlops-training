@@ -10,3 +10,6 @@ mlruns/
 # Quality gates (exercises/quality-gates)
 gate_report.*
 .pytest_cache/
+
+# Classroom slide decks: local only (ELM and Emeritus branding)
+slides/
