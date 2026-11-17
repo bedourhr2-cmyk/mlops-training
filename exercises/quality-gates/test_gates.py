@@ -1,6 +1,5 @@
 """Quality gates for f1-points-finish@candidate. Every gate must pass before promotion.
 
-Your task: complete TODO 1 to TODO 3. The first four gates are done for you.
 The fixtures (criteria, races, holdout, model, input_columns, predictions,
 probabilities) come from conftest.py. See exercises/quality-gates/README.md for the steps.
 
@@ -10,7 +9,6 @@ Usage:
     pytest exercises/quality-gates/test_gates.py
 """
 
-import pytest
 from sklearn.metrics import roc_auc_score
 
 from validate_data import validate
@@ -50,28 +48,26 @@ def test_roc_auc(probabilities, holdout, criteria, record_property):
 
 def test_beats_grid_rule(predictions, holdout, criteria, record_property):
     """Accuracy beats the grid rule by at least min_margin_over_grid_rule."""
-    # TODO 1: compute the model accuracy, as in test_accuracy, and the grid-rule accuracy:
-    #         the grid rule predicts 1 when holdout["grid"] <= 10. Record the difference
-    #         with record_property("margin", ...). Assert that the model accuracy is at
-    #         least the grid-rule accuracy + criteria["metrics"]["min_margin_over_grid_rule"].
-    #         Then delete the pytest.skip line.
-    pytest.skip("TODO 1: the gate 'beats the grid rule' is not written yet")
+    accuracy = (predictions == holdout[TARGET]).mean()
+    baseline = ((holdout["grid"] <= 10).astype(int) == holdout[TARGET]).mean()
+    margin = criteria["metrics"]["min_margin_over_grid_rule"]
+    record_property("margin", f"{accuracy - baseline:.3f}")
+    assert accuracy >= baseline + margin, (
+        f"accuracy {accuracy:.3f} beats the grid rule ({baseline:.3f}) by less than {margin}"
+    )
 
 
 def test_no_forbidden_features(input_columns, criteria, record_property):
     """The model needs no input that is known only after the race."""
-    # TODO 2: input_columns is the list of columns in the model signature. Find the
-    #         columns that are also in criteria["forbidden_features"]. Record how many
-    #         inputs the model has with record_property("inputs", ...). Assert that no
-    #         input is forbidden, and name the forbidden ones in the message.
-    #         Then delete the pytest.skip line.
-    pytest.skip("TODO 2: the gate 'no forbidden features' is not written yet")
+    forbidden = sorted(set(input_columns) & set(criteria["forbidden_features"]))
+    record_property("inputs", len(input_columns))
+    assert not forbidden, f"the model uses after-race columns: {', '.join(forbidden)}"
 
 
 def test_rookie_accuracy(predictions, holdout, criteria, record_property):
     """Accuracy on 2025 rookie entries is at least min_accuracy_rookie."""
-    # TODO 3: holdout["rookie"] is True for rookie entries. Compute the accuracy on those
-    #         rows only. Record it with record_property("rookie_accuracy", ...). Assert
-    #         that it is at least criteria["metrics"]["min_accuracy_rookie"].
-    #         Then delete the pytest.skip line.
-    pytest.skip("TODO 3: the gate 'rookie accuracy' is not written yet")
+    rookies = holdout["rookie"]
+    accuracy = (predictions[rookies] == holdout.loc[rookies, TARGET]).mean()
+    minimum = criteria["metrics"]["min_accuracy_rookie"]
+    record_property("rookie_accuracy", f"{accuracy:.3f}")
+    assert accuracy >= minimum, f"rookie accuracy {accuracy:.3f} is below {minimum}"
